@@ -12943,8 +12943,39 @@ int wifi_drv_set_ap(void *priv, struct wpa_driver_ap_params *params)
     vap = &interface->vap_info;
     radio = get_radio_by_rdk_index(vap->radio_index);
     radio_param = &radio->oper_param;
-
     drv = &radio->driver_data;
+
+    //update beacon rate params and interface struct
+    params->beacon_rate = vap->u.bss_info.beaconRate;
+    interface->u.ap.hapd.iconf->beacon_rate = vap->u.bss_info.beaconRate;
+
+    //update beacon rate type and driver capab flags
+#if HOSTAPD_VERSION >= 210
+    if (radio_param->variant & WIFI_80211_VARIANT_AX) {
+        wifi_hal_dbg_print("%s:%d: 802.11ax mode\n", __func__, __LINE__);
+        params->rate_type = BEACON_RATE_HE;
+        drv->capa.flags2 |= WPA_DRIVER_FLAGS2_BEACON_RATE_HE;
+        drv->capa.flags |= WPA_DRIVER_FLAGS_BEACON_RATE_VHT | WPA_DRIVER_FLAGS_BEACON_RATE_HT | WPA_DRIVER_FLAGS_BEACON_RATE_LEGACY;
+        if (radio->oper_param.band == WIFI_FREQUENCY_2_4_BAND) {
+            drv->capa.flags |= WPA_DRIVER_FLAGS_BEACON_RATE_HT | WPA_DRIVER_FLAGS_BEACON_RATE_LEGACY;
+        } else {
+            drv->capa.flags |= WPA_DRIVER_FLAGS_BEACON_RATE_VHT | WPA_DRIVER_FLAGS_BEACON_RATE_HT | WPA_DRIVER_FLAGS_BEACON_RATE_LEGACY;
+        }
+    } else
+#endif
+    if (radio_param->variant & WIFI_80211_VARIANT_AC) {
+        wifi_hal_dbg_print("%s:%d: 802.11ac mode\n", __func__, __LINE__);
+        params->rate_type = BEACON_RATE_VHT;
+        drv->capa.flags |= WPA_DRIVER_FLAGS_BEACON_RATE_VHT | WPA_DRIVER_FLAGS_BEACON_RATE_HT | WPA_DRIVER_FLAGS_BEACON_RATE_LEGACY;
+    } else if (radio_param->variant & WIFI_80211_VARIANT_N) {
+        wifi_hal_dbg_print("%s:%d: 802.11n mode\n", __func__, __LINE__);
+        params->rate_type = BEACON_RATE_HT;
+        drv->capa.flags |= WPA_DRIVER_FLAGS_BEACON_RATE_HT | WPA_DRIVER_FLAGS_BEACON_RATE_LEGACY;
+    } else {
+        wifi_hal_dbg_print("%s:%d: Legacy mode\n", __func__, __LINE__);
+        params->rate_type = BEACON_RATE_LEGACY;
+        drv->capa.flags |= WPA_DRIVER_FLAGS_BEACON_RATE_LEGACY;
+    }
 
     beacon_set = params->reenable ? 0 : interface->beacon_set;
 
