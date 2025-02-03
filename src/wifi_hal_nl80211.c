@@ -12955,7 +12955,6 @@ int wifi_drv_set_ap(void *priv, struct wpa_driver_ap_params *params)
         wifi_hal_dbg_print("%s:%d: 802.11ax mode\n", __func__, __LINE__);
         params->rate_type = BEACON_RATE_HE;
         drv->capa.flags2 |= WPA_DRIVER_FLAGS2_BEACON_RATE_HE;
-        drv->capa.flags |= WPA_DRIVER_FLAGS_BEACON_RATE_VHT | WPA_DRIVER_FLAGS_BEACON_RATE_HT | WPA_DRIVER_FLAGS_BEACON_RATE_LEGACY;
         if (radio->oper_param.band == WIFI_FREQUENCY_2_4_BAND) {
             drv->capa.flags |= WPA_DRIVER_FLAGS_BEACON_RATE_HT | WPA_DRIVER_FLAGS_BEACON_RATE_LEGACY;
         } else {
